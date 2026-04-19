@@ -72,3 +72,8 @@ App: https://hermes-front-five.vercel.app/
 
 
 API FUNCIONAL : <img width="1537" height="334" alt="imagen" src="https://github.com/user-attachments/assets/f539a103-ceb0-4f41-a28a-a7ee0d8a45b0" />
+
+
+
+<img width="1600" height="880" alt="image" src="https://github.com/user-attachments/assets/e2dd2f3e-8c10-4bd6-a2d1-5987d767bab7" />
+
