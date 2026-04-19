@@ -218,6 +218,7 @@ export const RadicacionPage: React.FC = () => {
                           <option>Corregimiento - San Antonio de Prado</option>
                           <option>Corregimiento - Santa Elena</option>
                         </select>
+                      </div>
                     </div>
                     <div className="space-y-2 mb-6">
                       <label className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">Asunto o Referencia</label>
