@@ -38,6 +38,14 @@ def create_app() -> FastAPI:
 
 app = create_app()
 
+@app.get("/")
+async def root():
+    return {
+        "message": "Bienvenido a la API de Hermes",
+        "docs": "/docs",
+        "health": "/api/v1/health_check"
+    }
+
 @app.get("/health_check")
 async def health_check():
     """Verifica que el servidor y Supabase estén respondiendo."""
