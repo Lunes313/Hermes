@@ -39,16 +39,18 @@ class PQRSDCreate(SQLModel):
 
 class PQRSDRead(PQRSDCreate):
     id: int
-    estado: str
-    dependencia_asignada: str
-    # Eliminamos campos antiguos o los dejamos opcionales para compatibilidad
-    score_clasificacion: Optional[float] = None
+    estado: Optional[str] = None
+    dependencia_asignada: Optional[str] = None
+    # Campos de UI para compatibilidad
+    score_clasificacion: Optional[float] = 0.0
     lead: Optional[str] = None
     urgencia: Optional[str] = None
     tipo_pqrs: Optional[str] = None
     lugar: Optional[str] = None
-    fecha_creacion: datetime
-    fecha_vencimiento: date
+    fecha_creacion: Optional[datetime] = None
+    fecha_vencimiento: Optional[date] = None
+    fecha_vencimiento_ley: Optional[datetime] = None
+    radicado: str
 
 
 class AprobarRequest(SQLModel):

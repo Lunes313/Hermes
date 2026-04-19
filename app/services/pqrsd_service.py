@@ -129,7 +129,18 @@ async def analyze_only(texto: str) -> Dict[str, Any]:
 async def create_pqrsd(payload: PQRSDCreate, ai_result: Optional[Dict[str, Any]] = None):
     supabase = get_supabase()
     now = datetime.utcnow()
-    ai_result = ai_result or await analyze_pqrsd_full(payload.texto)
+    
+    if not ai_result:
+        try:
+            ai_result = await analyze_pqrsd_full(payload.texto)
+        except Exception as e:
+            print(f"Error en AI analysis fallback: {e}")
+            ai_result = {
+                "tipo_pqrs": "Peticion",
+                "territorio": payload.territorio or "Medellín",
+                "dependencias": [],
+                "asunto": payload.asunto or "Solicitud Ciudadana"
+            }
 
     tipo = _normalize_tipo(payload.tipo or ai_result.get("tipo_pqrs") or ai_result.get("tipo") or "Peticion")
     territorio_nombre = payload.territorio or ai_result.get("territorio") or ai_result.get("lugar") or _extract_territorio(payload.texto)
@@ -139,9 +150,9 @@ async def create_pqrsd(payload: PQRSDCreate, ai_result: Optional[Dict[str, Any]]
     vencimiento = add_business_days(now.date(), 15)
 
     data = {
-        "asunto": payload.asunto,
-        "canal": payload.canal,
-        "remitente": payload.remitente,
+        "asunto": payload.asunto or "Solicitud Sin Asunto",
+        "canal": payload.canal or "portal_web",
+        "remitente": payload.remitente or payload.nombre or "Ciudadano Anónimo",
         "texto": payload.texto,
         "texto_original": payload.texto,
         "radicado": radicado,
@@ -151,12 +162,9 @@ async def create_pqrsd(payload: PQRSDCreate, ai_result: Optional[Dict[str, Any]]
         "embedding": ai_result.get("embedding"),
         "fecha_creacion": now.isoformat(),
         "fecha_vencimiento": vencimiento.isoformat(),
+        "fecha_vencimiento_ley": vencimiento.isoformat() # Usar el mismo para ambos campos de fecha
     }
 
-    if payload.nombre:
-        data["nombre_identificado"] = payload.nombre
-    if payload.email:
-        data["email"] = payload.email
     if territorio_id is not None:
         data["territorio_id"] = territorio_id
 
