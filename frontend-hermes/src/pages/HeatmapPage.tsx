@@ -1,56 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { AdminLayout } from '../components/layout/AdminLayout';
-import { MapContainer, TileLayer, Popup, useMap } from 'react-leaflet';
-import L from 'leaflet';
+import { MapContainer, TileLayer, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { api, type PQRSD } from '../services/api';
 import { TrendingUp, Activity, Map as MapIcon, Info, Users } from 'lucide-react';
 import { clsx } from 'clsx';
-
-// Ensure L is globally available for leaflet.heat
-if (typeof window !== 'undefined') {
-  (window as any).L = L;
-}
-
-const MapHeatLayer = ({ points }: { points: CommuneData[] }) => {
-  const map = useMap();
-
-  useEffect(() => {
-    if (!points || !points.length) return;
-
-    let heatLayer: any = null;
-
-    // Dynamically import leaflet.heat to avoid Vite hoisting lifecycle issues
-    import('leaflet.heat').then(() => {
-      const heatData = points.filter(p => p.count > 0).map(p => [
-        p.coords[0],
-        p.coords[1],
-        p.count * 10 
-      ]);
-
-      if ((L as any).heatLayer) {
-        heatLayer = (L as any).heatLayer(heatData, {
-          radius: 40,
-          blur: 25,
-          maxZoom: 14,
-          gradient: { 0.3: '#4ae176', 0.6: '#2259bf', 1.0: '#ba1a1a' }
-        });
-
-        heatLayer.addTo(map);
-      }
-    }).catch((err) => {
-      console.error("Error loading leaflet.heat:", err);
-    });
-
-    return () => {
-      if (heatLayer && map) {
-        map.removeLayer(heatLayer);
-      }
-    };
-  }, [map, points]);
-
-  return null;
-};
+import { HeatmapLayer } from 'react-leaflet-heatmap-layer-v3';
 
 // Coordenadas aproximadas de las comunas de Medellín
 const COMUNAS_COORDS: Record<string, [number, number]> = {
@@ -162,7 +117,18 @@ export const HeatmapPage: React.FC = () => {
                 url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
               />
-                <MapHeatLayer points={data} />
+                <HeatmapLayer
+                  fitBoundsOnLoad={false}
+                  fitBoundsOnUpdate={false}
+                  points={data.filter(p => p.count > 0)}
+                  longitudeExtractor={(p: any) => p.coords[1]}
+                  latitudeExtractor={(p: any) => p.coords[0]}
+                  intensityExtractor={(p: any) => p.count * 10}
+                  max={Math.max(...data.map(d => d.count * 10), 100)}
+                  radius={40}
+                  blur={25}
+                  gradient={{ 0.3: '#4ae176', 0.6: '#2259bf', 1.0: '#ba1a1a' }}
+                />
               </MapContainer>
           )}
         </div>
