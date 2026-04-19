@@ -9,6 +9,9 @@ export interface PQRSDOutput {
   dependencias: string[];
   tipo_pqrs: string;
   lugar: string;
+  asunto?: string;
+  hechos?: string;
+  territorio?: string;
 }
 
 export interface PQRSD {
@@ -27,6 +30,11 @@ export interface PQRSD {
   fecha_vencimiento: string;
 }
 
+export type ChatHistoryMessage = {
+  role: 'user' | 'assistant';
+  content: string;
+};
+
 export const api = {
   async analyze(texto: string): Promise<PQRSDOutput> {
     const response = await fetch(`${API_BASE_URL}/analyze`, {
@@ -38,7 +46,16 @@ export const api = {
     return response.json();
   },
 
-  async create(data: { asunto: string, canal: string, remitente: string, texto: string }): Promise<PQRSD> {
+  async create(data: {
+    asunto: string;
+    canal: string;
+    remitente: string;
+    texto: string;
+    nombre?: string;
+    email?: string;
+    tipo?: string;
+    territorio?: string;
+  }): Promise<PQRSD> {
     const response = await fetch(`${API_BASE_URL}/pqrsd`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -60,11 +77,11 @@ export const api = {
     return response.json();
   },
 
-  async chatInteract(texto: string): Promise<{ respuesta: string, analisis: PQRSDOutput }> {
+  async chatInteract(history: ChatHistoryMessage[]): Promise<{ respuesta: string, analisis: PQRSDOutput, radicado?: string }> {
     const response = await fetch(`${API_BASE_URL}/chat/interact`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ texto }),
+      body: JSON.stringify({ history }),
     });
     if (!response.ok) throw new Error('Failed to interact with chat');
     return response.json();

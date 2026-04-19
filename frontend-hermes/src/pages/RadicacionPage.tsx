@@ -32,7 +32,7 @@ export const RadicacionPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.nombre || !formData.email || !formData.asunto || !formData.descripcion) {
+    if (!formData.nombre || !formData.email || !formData.tipo || !formData.territorio || !formData.asunto || !formData.descripcion) {
       alert('Por favor complete todos los campos principales');
       return;
     }
@@ -45,7 +45,11 @@ export const RadicacionPage: React.FC = () => {
         asunto: formData.asunto,
         canal: 'Web',
         remitente: formData.nombre,
-        texto: combinedTexto
+        texto: combinedTexto,
+        nombre: formData.nombre,
+        email: formData.email,
+        tipo: formData.tipo,
+        territorio: formData.territorio
       });
       
       setRadicadoCode(response.radicado);

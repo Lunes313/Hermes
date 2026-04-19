@@ -1,20 +1,33 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Bot, User, Mic, Send, Loader2, CheckCircle2 } from 'lucide-react';
-import { api, type PQRSDOutput } from '../../services/api';
+import React, { useEffect, useRef, useState } from 'react';
+import { Bot, CheckCircle2, Mic, Send, User } from 'lucide-react';
 import { clsx } from 'clsx';
+import { api, type ChatHistoryMessage, type PQRSDOutput } from '../../services/api';
 
 interface ChatAreaProps {
   onAnalyze: (data: PQRSDOutput) => void;
   setIsAnalyzing: (loading: boolean) => void;
 }
 
+type UiMessage = {
+  role: 'ai' | 'user';
+  text: string;
+  time: string;
+};
+
+const initialAssistantText =
+  'Hola. Soy Hermes, tu asistente inteligente de la Alcaldia de Medellin. Cuentame en tus propias palabras que esta sucediendo o que necesitas solicitar.';
+
+const nowTime = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
 export const ChatArea: React.FC<ChatAreaProps> = ({ onAnalyze, setIsAnalyzing }) => {
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<{ role: 'ai' | 'user', text: string, time: string }[]>([
-    { role: 'ai', text: '¡Hola! Soy Hermes, tu asistente inteligente de la Alcaldía de Medellín. Cuéntame en tus propias palabras qué está sucediendo o qué necesitas solicitar.', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
+  const [messages, setMessages] = useState<UiMessage[]>([
+    { role: 'ai', text: initialAssistantText, time: nowTime() },
+  ]);
+  const [history, setHistory] = useState<ChatHistoryMessage[]>([
+    { role: 'assistant', content: initialAssistantText },
   ]);
   const [loading, setLoading] = useState(false);
-  const [lastAnalysis, setLastAnalysis] = useState<PQRSDOutput | null>(null);
   const [radicadoExitoso, setRadicadoExitoso] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -28,69 +41,41 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ onAnalyze, setIsAnalyzing })
     if (!input.trim() || loading || radicadoExitoso) return;
 
     const userMsg = input.trim();
-    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    
-    setMessages(prev => [...prev, { role: 'user', text: userMsg, time }]);
+    const userUiMessage: UiMessage = { role: 'user', text: userMsg, time: nowTime() };
+    const nextHistory: ChatHistoryMessage[] = [...history, { role: 'user', content: userMsg }];
+
+    setMessages(prev => [...prev, userUiMessage]);
+    setHistory(nextHistory);
     setInput('');
     setLoading(true);
     setIsAnalyzing(true);
 
-    // Check for confirmation keywords
-    const confirmationKeywords = ['sí', 'si', 'proceda', 'claro', 'adelante', 'proceder', 'estoy de acuerdo'];
-    const isConfirmation = confirmationKeywords.some(k => userMsg.toLowerCase().includes(k));
-
-    if (isConfirmation && lastAnalysis && lastAnalysis.nombre) {
-      try {
-        const response = await api.create({
-          asunto: `Solicitud de ${lastAnalysis.nombre} en ${lastAnalysis.lugar}`,
-          canal: 'Chat IA',
-          remitente: lastAnalysis.nombre,
-          texto: messages.filter(m => m.role === 'user').map(m => m.text).join(' ')
-        });
-        
-        setRadicadoExitoso(response.radicado);
-        setMessages(prev => [...prev, { 
-          role: 'ai', 
-          text: `¡Listo! He radicado tu solicitud oficialmente. Tu número de radicado es ${response.radicado}. Estaré enviando actualizaciones a tu correo.`, 
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
-        }]);
-        setLoading(false);
-        setIsAnalyzing(false);
-        return;
-      } catch (error) {
-        console.error("Error creating radicado from chat:", error);
-      }
-    }
-
     try {
-      // Send conversation history to the backend context
-      const conversationContext = messages
-        .filter(m => m.role === 'user')
-        .map(m => m.text)
-        .join('. ') + '. ' + userMsg;
-
-      const response = await api.chatInteract(conversationContext);
-      
-      // Anti-repetition logic
+      const response = await api.chatInteract(nextHistory);
       let finalText = response.respuesta;
       const lastAiMsg = messages.filter(m => m.role === 'ai').pop();
-      
-      if (lastAiMsg && lastAiMsg.text === response.respuesta) {
-        // Simple client-side rephrasing if backend doesn't handle it well
-        finalText = `Entiendo perfectamente. ${response.respuesta} ¿Hay algún otro detalle que deba saber sobre lo que ocurre en ${response.analisis.lugar || 'tu sector'}?`;
+
+      if (lastAiMsg && lastAiMsg.text.trim() === response.respuesta.trim()) {
+        finalText = `Ya tengo presente lo anterior. ${response.respuesta}`;
       }
 
-      setLastAnalysis(response.analisis);
+      setHistory(prev => [...prev, { role: 'assistant', content: finalText }]);
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'ai',
+          text: finalText,
+          time: nowTime(),
+        },
+      ]);
+
+      setRadicadoExitoso(response.radicado ?? null);
       onAnalyze(response.analisis);
-      
-      setMessages(prev => [...prev, { 
-        role: 'ai', 
-        text: finalText, 
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
-      }]);
     } catch (error) {
       console.error(error);
-      setMessages(prev => [...prev, { role: 'ai', text: 'Lo siento, hubo un error al procesar tu solicitud. ¿Podrías repetirlo?', time: '' }]);
+      const errorText = 'Lo siento, hubo un error al procesar tu solicitud. Podrias repetirlo?';
+      setHistory(prev => [...prev, { role: 'assistant', content: errorText }]);
+      setMessages(prev => [...prev, { role: 'ai', text: errorText, time: nowTime() }]);
     } finally {
       setLoading(false);
       setIsAnalyzing(false);
@@ -103,24 +88,24 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ onAnalyze, setIsAnalyzing })
         {messages.map((msg, i) => (
           <div key={i} className={`flex gap-4 max-w-[85%] animate-in fade-in slide-in-from-bottom-2 duration-300 ${msg.role === 'user' ? 'self-end flex-row-reverse' : ''}`}>
             <div className={clsx(
-              "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-transform hover:scale-110",
+              'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-transform hover:scale-110',
               msg.role === 'ai' ? 'bg-secondary text-on-secondary' : 'bg-primary text-on-primary'
             )}>
               {msg.role === 'ai' ? <Bot size={20} /> : <User size={20} />}
             </div>
             <div className={clsx(
-              "p-4 rounded-2xl shadow-sm relative group",
+              'p-4 rounded-2xl shadow-sm relative group',
               msg.role === 'ai' ? 'bg-white rounded-tl-sm text-on-surface border border-outline-variant/30' : 'bg-secondary text-on-secondary rounded-tr-sm'
             )}>
               <p className="font-body leading-relaxed whitespace-pre-wrap text-sm md:text-base">{msg.text}</p>
               <span className={clsx(
-                "text-[10px] mt-2 block opacity-70",
+                'text-[10px] mt-2 block opacity-70',
                 msg.role === 'ai' ? 'text-on-surface-variant' : 'text-on-secondary'
               )}>{msg.time}</span>
             </div>
           </div>
         ))}
-        
+
         {loading && (
           <div className="flex gap-4 max-w-[85%] animate-pulse">
             <div className="w-10 h-10 rounded-full bg-secondary text-on-secondary flex items-center justify-center">
@@ -128,9 +113,9 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ onAnalyze, setIsAnalyzing })
             </div>
             <div className="bg-white p-4 rounded-2xl rounded-tl-sm border border-outline-variant/30 flex items-center gap-3">
               <div className="flex gap-1">
-                <div className="w-2 h-2 bg-secondary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                <div className="w-2 h-2 bg-secondary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                <div className="w-2 h-2 bg-secondary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                <div className="w-2 h-2 bg-secondary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-2 h-2 bg-secondary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-2 h-2 bg-secondary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
               <span className="text-xs font-bold text-secondary uppercase tracking-widest">Analizando reporte...</span>
             </div>
@@ -144,7 +129,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ onAnalyze, setIsAnalyzing })
             </div>
             <div className="text-center">
               <h4 className="text-on-tertiary-container font-black text-lg">PROCESO FINALIZADO</h4>
-              <p className="text-on-tertiary-fixed-variant text-sm mt-1">Radicado generado con éxito.</p>
+              <p className="text-on-tertiary-fixed-variant text-sm mt-1">Radicado generado: {radicadoExitoso}</p>
             </div>
           </div>
         )}
@@ -152,20 +137,23 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ onAnalyze, setIsAnalyzing })
 
       <div className="p-4 bg-surface-container-low border-t border-surface-variant">
         <div className="relative flex items-center bg-surface-container-lowest rounded-full px-4 py-3 focus-within:ring-2 focus-within:ring-secondary/20 transition-all group border border-surface-variant focus-within:border-secondary">
-          <button className="p-2 text-on-surface-variant hover:text-secondary transition-colors cursor-pointer"><Mic size={20} /></button>
-          <input 
-            className="flex-1 bg-transparent border-none focus:ring-0 text-on-surface font-body outline-none px-2 text-sm md:text-base disabled:opacity-50" 
-            placeholder={radicadoExitoso ? "Solicitud radicada" : "Cuéntame tu problema..."}
-            type="text" 
+          <button className="p-2 text-on-surface-variant hover:text-secondary transition-colors cursor-pointer" type="button">
+            <Mic size={20} />
+          </button>
+          <input
+            className="flex-1 bg-transparent border-none focus:ring-0 text-on-surface font-body outline-none px-2 text-sm md:text-base disabled:opacity-50"
+            placeholder={radicadoExitoso ? 'Solicitud radicada' : 'Cuentame tu problema...'}
+            type="text"
             value={input}
-            disabled={radicadoExitoso || loading}
+            disabled={radicadoExitoso !== null || loading}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
           />
-          <button 
+          <button
             onClick={handleSend}
-            disabled={loading || !input.trim() || !!radicadoExitoso}
+            disabled={loading || !input.trim() || radicadoExitoso !== null}
             className="w-12 h-12 bg-primary text-on-primary rounded-full flex items-center justify-center transition-all cursor-pointer disabled:opacity-30 disabled:scale-100 disabled:shadow-none shrink-0"
+            type="button"
           >
             <Send size={20} />
           </button>

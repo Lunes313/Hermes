@@ -2,7 +2,7 @@ from typing import List
 
 from fastapi import APIRouter, HTTPException, status
 
-from app.schemas.pqrsd import AprobarRequest, AprobarResponse, PQRSDCreate, PQRSDInput, PQRSDOutput
+from app.schemas.pqrsd import AprobarRequest, AprobarResponse, ChatInput, PQRSDCreate, PQRSDInput, PQRSDOutput
 from app.services.pqrsd_service import (
     aprobar_pqrsd,
     create_pqrsd,
@@ -23,7 +23,7 @@ async def analyze_endpoint(payload: PQRSDInput):
 
 
 @router.post("/chat/interact")
-async def chat_interact_endpoint(payload: PQRSDInput):
+async def chat_interact_endpoint(payload: ChatInput):
     return await procesar_mensaje_chatbot(payload)
 
 

@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { AdminLayout } from '../components/layout/AdminLayout';
-import { MapContainer, TileLayer, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { api, type PQRSD } from '../services/api';
-import { TrendingUp, Activity, Map as MapIcon, Info, Users } from 'lucide-react';
+import { api } from '../services/api';
+import { TrendingUp, Activity, Info } from 'lucide-react';
 import { clsx } from 'clsx';
-import { HeatmapLayer } from 'react-leaflet-heatmap-layer-v3';
 
 // Coordenadas aproximadas de las comunas de Medellín
 const COMUNAS_COORDS: Record<string, [number, number]> = {
@@ -44,6 +43,65 @@ interface CommuneData {
   coords: [number, number];
   primaryDependency: string;
 }
+
+const CanvasHeatLayer = ({ points }: { points: CommuneData[] }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    if (!context) return;
+
+    canvas.style.position = 'absolute';
+    canvas.style.pointerEvents = 'none';
+    canvas.style.mixBlendMode = 'multiply';
+    map.getPanes().overlayPane.appendChild(canvas);
+
+    const draw = () => {
+      const size = map.getSize();
+      const topLeft = map.containerPointToLayerPoint([0, 0]);
+      const maxCount = Math.max(...points.map(point => point.count), 1);
+
+      canvas.width = size.x;
+      canvas.height = size.y;
+      canvas.style.width = `${size.x}px`;
+      canvas.style.height = `${size.y}px`;
+      canvas.style.transform = `translate(${topLeft.x}px, ${topLeft.y}px)`;
+      context.clearRect(0, 0, size.x, size.y);
+
+      points
+        .filter(point => point.count > 0)
+        .forEach(point => {
+          const layerPoint = map.latLngToLayerPoint(point.coords);
+          const x = layerPoint.x - topLeft.x;
+          const y = layerPoint.y - topLeft.y;
+          const intensity = Math.max(point.count / maxCount, 0.18);
+          const radius = 34 + intensity * 42;
+          const gradient = context.createRadialGradient(x, y, 0, x, y, radius);
+
+          gradient.addColorStop(0, `rgba(186, 26, 26, ${0.35 + intensity * 0.35})`);
+          gradient.addColorStop(0.45, `rgba(34, 89, 191, ${0.22 + intensity * 0.22})`);
+          gradient.addColorStop(0.78, `rgba(74, 225, 118, ${0.12 + intensity * 0.18})`);
+          gradient.addColorStop(1, 'rgba(74, 225, 118, 0)');
+
+          context.fillStyle = gradient;
+          context.beginPath();
+          context.arc(x, y, radius, 0, Math.PI * 2);
+          context.fill();
+        });
+    };
+
+    draw();
+    map.on('move zoom resize', draw);
+
+    return () => {
+      map.off('move zoom resize', draw);
+      canvas.remove();
+    };
+  }, [map, points]);
+
+  return null;
+};
 
 export const HeatmapPage: React.FC = () => {
   const [data, setData] = useState<CommuneData[]>([]);
@@ -117,18 +175,7 @@ export const HeatmapPage: React.FC = () => {
                 url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
               />
-                <HeatmapLayer
-                  fitBoundsOnLoad={false}
-                  fitBoundsOnUpdate={false}
-                  points={data.filter(p => p.count > 0)}
-                  longitudeExtractor={(p: any) => p.coords[1]}
-                  latitudeExtractor={(p: any) => p.coords[0]}
-                  intensityExtractor={(p: any) => p.count * 10}
-                  max={Math.max(...data.map(d => d.count * 10), 100)}
-                  radius={40}
-                  blur={25}
-                  gradient={{ 0.3: '#4ae176', 0.6: '#2259bf', 1.0: '#ba1a1a' }}
-                />
+                <CanvasHeatLayer points={data} />
               </MapContainer>
           )}
         </div>

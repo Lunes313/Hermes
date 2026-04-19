@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Optional, List
+from typing import Literal, Optional, List
 
 from pydantic import Field, BaseModel
 from sqlmodel import SQLModel
@@ -10,17 +10,31 @@ from sqlmodel import SQLModel
 class PQRSDInput(BaseModel):
     texto: str
 
+class ChatHistoryMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str
+
+class ChatInput(BaseModel):
+    history: List[ChatHistoryMessage]
+
 class PQRSDOutput(BaseModel):
     nombre: str
     dependencias: List[str]
     tipo_pqrs: str
     lugar: str
+    asunto: Optional[str] = None
+    hechos: Optional[str] = None
+    territorio: Optional[str] = None
 
 class PQRSDCreate(SQLModel):
     asunto: str = Field(..., min_length=1, max_length=200)
     canal: str = Field(..., min_length=1, max_length=80)
     remitente: str = Field(..., min_length=1, max_length=160)
     texto: str = Field(..., min_length=1)
+    nombre: Optional[str] = Field(default=None, max_length=160)
+    email: Optional[str] = Field(default=None, max_length=160)
+    tipo: Optional[str] = Field(default=None, max_length=40)
+    territorio: Optional[str] = Field(default=None, max_length=160)
 
 
 class PQRSDRead(PQRSDCreate):
