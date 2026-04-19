@@ -32,7 +32,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     
-    app.include_router(api_router)
+    app.include_router(api_router, prefix="/api/v1")
     return app
 
 
@@ -44,7 +44,7 @@ async def health_check():
     try:
         supabase = get_supabase()
         # Una consulta simple para verificar la conexión
-        supabase.table("dependencia").select("count", count="exact").limit(1).execute()
+        supabase.table("dependencias").select("count", count="exact").limit(1).execute()
         return {"status": "ok", "supabase": "connected"}
     except Exception as e:
         return {"status": "error", "message": str(e)}

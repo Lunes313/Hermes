@@ -2,17 +2,29 @@ from typing import List
 
 from fastapi import APIRouter, HTTPException, status
 
-from app.schemas.pqrsd import AprobarRequest, AprobarResponse, PQRSDCreate
+from app.schemas.pqrsd import AprobarRequest, AprobarResponse, PQRSDCreate, PQRSDInput, PQRSDOutput
 from app.services.pqrsd_service import (
     aprobar_pqrsd,
     create_pqrsd,
     get_pqrsd,
     get_trazabilidad,
-    list_pqrsd
+    list_pqrsd,
+    analyze_only,
+    procesar_mensaje_chatbot
 )
 
 
 router = APIRouter()
+
+
+@router.post("/analyze", response_model=PQRSDOutput)
+async def analyze_endpoint(payload: PQRSDInput):
+    return await analyze_only(payload.texto)
+
+
+@router.post("/chat/interact")
+async def chat_interact_endpoint(payload: PQRSDInput):
+    return await procesar_mensaje_chatbot(payload)
 
 
 @router.post("/pqrsd", status_code=status.HTTP_201_CREATED)
