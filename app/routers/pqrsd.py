@@ -2,14 +2,21 @@ from typing import List
 
 from fastapi import APIRouter, HTTPException, status
 
-from app.schemas.pqrsd import AprobarRequest, AprobarResponse, PQRSDCreate
+from app.schemas.pqrsd import (
+    AprobarRequest,
+    AprobarResponse,
+    ClasificacionPreviewRequest,
+    ClasificacionPreviewResponse,
+    PQRSDCreate,
+)
 from app.services.pqrsd_service import (
     aprobar_pqrsd,
     create_pqrsd,
     get_pqrsd,
     get_trazabilidad,
-    list_pqrsd
+    list_pqrsd,
 )
+from app.services.classifier import clasificar_pqrsd
 
 
 router = APIRouter()
@@ -18,6 +25,11 @@ router = APIRouter()
 @router.post("/pqrsd", status_code=status.HTTP_201_CREATED)
 async def create_pqrsd_endpoint(payload: PQRSDCreate):
     return await create_pqrsd(payload)
+
+
+@router.post("/clasificar-preview", response_model=ClasificacionPreviewResponse)
+async def clasificar_preview_endpoint(payload: ClasificacionPreviewRequest):
+    return clasificar_pqrsd(payload.texto)
 
 
 @router.get("/pqrsd")
