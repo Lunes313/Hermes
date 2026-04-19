@@ -1,10 +1,56 @@
 import React, { useEffect, useState } from 'react';
 import { AdminLayout } from '../components/layout/AdminLayout';
-import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { api, type PQRSD } from '../services/api';
 import { TrendingUp, Activity, Map as MapIcon, Info, Users } from 'lucide-react';
 import { clsx } from 'clsx';
+
+// Ensure L is globally available for leaflet.heat
+if (typeof window !== 'undefined') {
+  (window as any).L = L;
+}
+
+const MapHeatLayer = ({ points }: { points: CommuneData[] }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!points || !points.length) return;
+
+    let heatLayer: any = null;
+
+    // Dynamically import leaflet.heat to avoid Vite hoisting lifecycle issues
+    import('leaflet.heat').then(() => {
+      const heatData = points.filter(p => p.count > 0).map(p => [
+        p.coords[0],
+        p.coords[1],
+        p.count * 10 
+      ]);
+
+      if ((L as any).heatLayer) {
+        heatLayer = (L as any).heatLayer(heatData, {
+          radius: 40,
+          blur: 25,
+          maxZoom: 14,
+          gradient: { 0.3: '#4ae176', 0.6: '#2259bf', 1.0: '#ba1a1a' }
+        });
+
+        heatLayer.addTo(map);
+      }
+    }).catch((err) => {
+      console.error("Error loading leaflet.heat:", err);
+    });
+
+    return () => {
+      if (heatLayer && map) {
+        map.removeLayer(heatLayer);
+      }
+    };
+  }, [map, points]);
+
+  return null;
+};
 
 // Coordenadas aproximadas de las comunas de Medellín
 const COMUNAS_COORDS: Record<string, [number, number]> = {
@@ -116,35 +162,8 @@ export const HeatmapPage: React.FC = () => {
                 url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
               />
-              {data.map((commune, idx) => (
-                <CircleMarker
-                  key={idx}
-                  center={commune.coords}
-                  radius={10 + (commune.count * 2)}
-                  fillColor={getHeatColor(commune.count)}
-                  color="white"
-                  weight={2}
-                  opacity={1}
-                  fillOpacity={0.6}
-                >
-                  <Popup>
-                    <div className="p-2 min-w-[200px]">
-                      <h3 className="font-bold text-lg mb-1">{commune.name}</h3>
-                      <div className="flex flex-col gap-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-slate-500">Solicitudes activas:</span>
-                          <span className="font-black text-primary">{commune.count}</span>
-                        </div>
-                        <div className="pt-2 border-t border-slate-100">
-                          <span className="text-xs text-slate-400 block mb-1 uppercase font-bold">Principal Dependencia</span>
-                          <span className="text-sm font-semibold text-secondary">{commune.primaryDependency}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </Popup>
-                </CircleMarker>
-              ))}
-            </MapContainer>
+                <MapHeatLayer points={data} />
+              </MapContainer>
           )}
         </div>
 
