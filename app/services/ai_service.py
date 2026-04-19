@@ -3,12 +3,11 @@ from __future__ import annotations
 import json
 import re
 import unicodedata
-import urllib.error
-import urllib.request
+import asyncio
 from typing import Any, Dict, List, Optional
 
+import httpx
 from app.core.config import settings
-
 
 DEPENDENCY_KEYWORDS = {
     "infraestructura": ["hueco", "calle", "via", "anden", "puente", "alcantarilla"],
@@ -16,38 +15,42 @@ DEPENDENCY_KEYWORDS = {
     "hacienda": ["impuesto", "predial", "pago", "factura", "cobro", "tributo"],
 }
 
-HIGH_URGENCY_KEYWORDS = ["urgente", "riesgo", "ninos"]
+HIGH_URGENCY_KEYWORDS = ["urgente", "riesgo", "ninos", "peligro", "muerte"]
 LOW_URGENCY_KEYWORDS = ["consulta", "informacion", "pregunta"]
 VALID_DEPENDENCIES = {"infraestructura", "salud", "hacienda", "atencion_ciudadana"}
 VALID_URGENCY = {"alta", "media", "baja"}
 
 
-def analyze_pqrsd(texto: str) -> Dict[str, object]:
-    groq_result = call_groq(texto)
+async def analyze_pqrsd_full(texto: str) -> Dict[str, object]:
+    """
+    Ejecuta clasificacion, sintesis y embeddings en paralelo usando asyncio.gather
+    """
+    # Si tenemos keys de AI, ejecutamos en paralelo
+    tasks = [
+        call_groq(texto),
+        generate_embedding(texto)
+    ]
+    
+    groq_result, embedding = await asyncio.gather(*tasks)
+    
     if groq_result:
-        return _normalize_ai_result(texto, groq_result)
-
-    classification = fallback_classify_pqrsd(texto)
-    synthesis = fallback_synthesize_pqrsd(texto)
-    return {
-        "dependencia": classification["dependencia"],
-        "score": classification["score"],
-        "lead": synthesis["lead"],
-        "urgencia": synthesis["urgencia"],
-    }
-
-
-def classify_pqrsd(texto: str) -> Dict[str, object]:
-    result = analyze_pqrsd(texto)
-    return {"dependencia": result["dependencia"], "score": result["score"]}
-
-
-def synthesize_pqrsd(texto: str) -> Dict[str, str]:
-    result = analyze_pqrsd(texto)
-    return {"lead": str(result["lead"]), "urgencia": str(result["urgencia"])}
+        normalized = _normalize_ai_result(texto, groq_result)
+    else:
+        # Fallback si falla Groq
+        classification = fallback_classify_pqrsd(texto)
+        synthesis = fallback_synthesize_pqrsd(texto)
+        normalized = {
+            "dependencia": classification["dependencia"],
+            "score": classification["score"],
+            "lead": synthesis["lead"],
+            "urgencia": synthesis["urgencia"],
+        }
+    
+    normalized["embedding"] = embedding
+    return normalized
 
 
-def call_groq(texto: str) -> Optional[Dict[str, object]]:
+async def call_groq(texto: str) -> Optional[Dict[str, object]]:
     if not settings.GROQ_API_KEY:
         return None
 
@@ -59,7 +62,7 @@ def call_groq(texto: str) -> Optional[Dict[str, object]]:
             {
                 "role": "system",
                 "content": (
-                    "Eres un clasificador de PQRSD para una alcaldia. "
+                    "Eres un clasificador de PQRSD para la Alcaldia de Medellin. "
                     "Responde solo JSON valido, sin markdown."
                 ),
             },
@@ -70,7 +73,7 @@ def call_groq(texto: str) -> Optional[Dict[str, object]]:
                     "dependencia, score, lead, urgencia. "
                     "dependencia debe ser una de: infraestructura, salud, hacienda, "
                     "atencion_ciudadana. score debe ser numero entre 0 y 1. "
-                    "lead debe ser un resumen corto de una frase. "
+                    "lead debe ser un resumen corto de una frase (max 200 caracteres). "
                     "urgencia debe ser alta, media o baja.\n\n"
                     f"Texto: {texto}"
                 ),
@@ -78,62 +81,47 @@ def call_groq(texto: str) -> Optional[Dict[str, object]]:
         ],
     }
 
-    request = urllib.request.Request(
-        settings.GROQ_API_URL,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "Authorization": f"Bearer {settings.GROQ_API_KEY}",
-            "Content-Type": "application/json",
-        },
-        method="POST",
-    )
+    headers = {
+        "Authorization": f"Bearer {settings.GROQ_API_KEY}",
+        "Content-Type": "application/json",
+    }
 
-    try:
-        with urllib.request.urlopen(
-            request,
-            timeout=settings.AI_TIMEOUT_SECONDS,
-        ) as response:
-            response_data = json.loads(response.read().decode("utf-8"))
-    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError):
-        return None
-
-    try:
-        content = response_data["choices"][0]["message"]["content"]
-    except (KeyError, IndexError, TypeError):
-        return None
-
-    return _extract_json_object(content)
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(
+                settings.GROQ_API_URL,
+                json=payload,
+                headers=headers,
+                timeout=settings.AI_TIMEOUT_SECONDS
+            )
+            response.raise_for_status()
+            response_data = response.json()
+            content = response_data["choices"][0]["message"]["content"]
+            return _extract_json_object(content)
+        except Exception:
+            return None
 
 
-def generate_embedding(texto: str) -> List[float]:
+async def generate_embedding(texto: str) -> List[float]:
+    """Genera embeddings usando HuggingFace con fallback de ceros"""
     if not settings.HUGGINGFACE_API_KEY:
-        return []
+        return [0.0] * 384
 
-    url = (
-        "https://api-inference.huggingface.co/pipeline/feature-extraction/"
-        f"{settings.HUGGINGFACE_EMBEDDING_MODEL}"
-    )
+    url = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{settings.HUGGINGFACE_EMBEDDING_MODEL}"
     payload = {"inputs": texto, "options": {"wait_for_model": True}}
-    request = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "Authorization": f"Bearer {settings.HUGGINGFACE_API_KEY}",
-            "Content-Type": "application/json",
-        },
-        method="POST",
-    )
+    headers = {
+        "Authorization": f"Bearer {settings.HUGGINGFACE_API_KEY}",
+        "Content-Type": "application/json",
+    }
 
-    try:
-        with urllib.request.urlopen(
-            request,
-            timeout=settings.AI_TIMEOUT_SECONDS,
-        ) as response:
-            response_data = json.loads(response.read().decode("utf-8"))
-    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError):
-        return []
-
-    return _flatten_embedding(response_data)
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(url, json=payload, headers=headers, timeout=settings.AI_TIMEOUT_SECONDS)
+            response.raise_for_status()
+            response_data = response.json()
+            return _flatten_embedding(response_data)
+        except Exception:
+            return [0.0] * 384
 
 
 def fallback_classify_pqrsd(texto: str) -> Dict[str, object]:
@@ -214,16 +202,22 @@ def _extract_json_object(content: str) -> Optional[Dict[str, object]]:
 
 def _flatten_embedding(data: Any) -> List[float]:
     if isinstance(data, list) and data and all(isinstance(item, (int, float)) for item in data):
-        return [float(item) for item in data]
+        embedding = [float(item) for item in data]
+        if len(embedding) > 384:
+            embedding = embedding[:384]
+        return embedding
 
     if isinstance(data, list) and data and isinstance(data[0], list):
         first_embedding = data[0]
         if first_embedding and isinstance(first_embedding[0], list):
             first_embedding = first_embedding[0]
         if all(isinstance(item, (int, float)) for item in first_embedding):
-            return [float(item) for item in first_embedding]
+            embedding = [float(item) for item in first_embedding]
+            if len(embedding) > 384:
+                embedding = embedding[:384]
+            return embedding
 
-    return []
+    return [0.0] * 384
 
 
 def _first_sentence(texto: str) -> str:

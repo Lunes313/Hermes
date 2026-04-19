@@ -1,9 +1,6 @@
-from typing import List
+from app.core.database import get_supabase
 
-from sqlmodel import Session, select
-
-from app.models.dependencia import Dependencia
-
-
-def list_dependencias(session: Session) -> List[Dependencia]:
-    return list(session.exec(select(Dependencia).order_by(Dependencia.nombre)).all())
+async def list_dependencias():
+    supabase = get_supabase()
+    result = supabase.table("dependencia").select("*").order("nombre").execute()
+    return result.data
