@@ -1,0 +1,1 @@
+"""FastAPI hackathon backend package."""
