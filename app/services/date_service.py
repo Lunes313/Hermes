@@ -1,12 +1,16 @@
 from datetime import date, timedelta
-import holidays
+
+try:
+    import holidays
+except ModuleNotFoundError:
+    holidays = None
 
 def add_business_days(start_date: date, business_days: int) -> date:
     """
     Calcula la fecha final sumando dias habiles, excluyendo fines de semana 
     y festivos de Colombia.
     """
-    co_holidays = holidays.Colombia()
+    co_holidays = holidays.Colombia() if holidays else set()
     current_date = start_date
     days_added = 0
     
