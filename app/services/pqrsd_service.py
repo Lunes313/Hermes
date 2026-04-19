@@ -1,19 +1,11 @@
 from datetime import datetime
 import random
-<<<<<<< Updated upstream
-from typing import Optional
-
-from app.core.supabase_client import get_supabase_client
-from app.schemas.pqrsd import AprobarRequest, PQRSDCreate
-=======
 from typing import List, Optional, Dict, Any
 
 from app.core.database import get_supabase
 from app.schemas.pqrsd import AprobarRequest, PQRSDCreate, PQRSDInput
 from app.services.ai_service import analyze_pqrsd_full, generate_embedding, classify_with_huggingface
->>>>>>> Stashed changes
 from app.services.date_service import add_business_days
-from app.services.classifier import clasificar_pqrsd
 
 # Prompts variables por tipo de solicitud
 PROMPTS_POR_TIPO = {
@@ -76,11 +68,14 @@ async def procesar_mensaje_chatbot(payload: PQRSDInput):
     
     # Evaluar si falta información crítica
     info_faltante = []
-    if not analisis.get("asunto") or len(texto) < 10: info_faltante.append("detalles del problema")
-    if not analisis.get("lugar"): info_faltante.append("barrio o comuna")
+    if not analisis.get("asunto") or len(analisis.get("asunto", "")) < 4: 
+        info_faltante.append("detalles del problema")
+        
+    if not analisis.get("lugar"): 
+        info_faltante.append("barrio o comuna exactos donde ocurre esto")
     
     if info_faltante:
-        respuesta_ia = f"Hola, para ayudarte mejor con tu {tipo}, ¿podrías darme más {', '.join(info_faltante)}? {precedentes if 'No hay' not in precedentes else ''}"
+        respuesta_ia = f"Hola, para ayudarte mejor con tu {tipo}, ¿podrías darme más {', y '.join(info_faltante)}? {precedentes if 'No hay' not in precedentes else ''}"
     else:
         # Si tiene todo, generar resumen y pedir confirmación
         respuesta_ia = f"Entiendo tu situación en {lugar}. {base_prompt.format(dependencias=deps, lugar=lugar)}\n\n{precedentes}\n\n¿Deseas radicar esta solicitud oficialmente ahora mismo?"
@@ -105,22 +100,13 @@ async def analyze_only(texto: str) -> Dict[str, Any]:
     return await analyze_pqrsd_full(texto)
 
 async def create_pqrsd(payload: PQRSDCreate):
-    supabase = get_supabase_client()
+    supabase = get_supabase()
     now = datetime.utcnow()
-<<<<<<< Updated upstream
-
-    rand_suffix = random.randint(1000, 9999)
-    radicado = f"{now.strftime('%Y%m%d')}-{rand_suffix}"
-=======
     ai_result = await analyze_pqrsd_full(payload.texto)
     
     radicado = f"HER-{now.strftime('%Y%m%d')}-{random.randint(1000, 9999)}"
->>>>>>> Stashed changes
     vencimiento = add_business_days(now.date(), 15)
-
-    # Clasificar el PQRSD
-    clasificacion = clasificar_pqrsd(payload.texto)
-
+    
     data = {
         "asunto": payload.asunto,
         "canal": payload.canal,
@@ -128,90 +114,38 @@ async def create_pqrsd(payload: PQRSDCreate):
         "texto": payload.texto,
         "radicado": radicado,
         "estado": "radicada",
-<<<<<<< Updated upstream
-        "dependencia_asignada": payload.dependencia_asignada,
-        "secretaria_principal": clasificacion["principal"],
-        "revision_manual": clasificacion["revision_manual"],
-=======
         "dependencias": ai_result.get("dependencias", ["Atención Ciudadana"]),
         "tipo_pqrs": ai_result.get("tipo_pqrs", "Petición"),
         "lugar": ai_result.get("lugar", ""),
         "nombre_ciudadano": ai_result.get("nombre", "Anónimo"),
         "embedding": ai_result.get("embedding"),
->>>>>>> Stashed changes
         "fecha_creacion": now.isoformat(),
         "fecha_vencimiento": vencimiento.isoformat(),
         "clasificado_en": now.isoformat()
     }
-<<<<<<< Updated upstream
-
-    result = supabase.table("pqrsd").insert(data).execute()
-    pqrsd = result.data[0] if result.data else None
-    if pqrsd is None:
-        return None
-
-    await add_trazabilidad(
-        pqrsd_id=pqrsd["id"],
-        evento="PQRSD radicada",
-        usuario="sistema",
-        observaciones=f"Radicado generado: {radicado}.",
-    )
-
-=======
     
     result = supabase.table("pqrsd").insert(data).execute()
     pqrsd = result.data[0]
     
     await add_trazabilidad(pqrsd["id"], "Radicación desde Chat", "sistema", f"Radicado {radicado}")
->>>>>>> Stashed changes
     return pqrsd
 
 async def get_pqrsd(pqrsd_id: int):
-    supabase = get_supabase_client()
+    supabase = get_supabase()
     result = supabase.table("pqrsd").select("*").eq("id", pqrsd_id).execute()
     return result.data[0] if result.data else None
 
 async def list_pqrsd():
-    supabase = get_supabase_client()
+    supabase = get_supabase()
     result = supabase.table("pqrsd").select("*").order("fecha_creacion", desc=True).execute()
     return result.data
 
 async def get_trazabilidad(pqrsd_id: int):
-    supabase = get_supabase_client()
+    supabase = get_supabase()
     result = supabase.table("trazabilidad").select("*").eq("pqrsd_id", pqrsd_id).order("fecha").execute()
     return result.data
 
 async def aprobar_pqrsd(payload: AprobarRequest):
-<<<<<<< Updated upstream
-    supabase = get_supabase_client()
-    nuevo_estado = "aprobada_juridico" if payload.aprobado else "devuelta"
-
-    result = supabase.table("pqrsd").update({"estado": nuevo_estado}).eq("id", payload.pqrsd_id).execute()
-    if not result.data:
-        return None
-
-    pqrsd = result.data[0]
-
-    await add_trazabilidad(
-        pqrsd_id=pqrsd["id"],
-        evento="Revision Juridica",
-        usuario=payload.usuario,
-        observaciones=f"Estado cambiado a: {nuevo_estado}. Obs: {payload.observaciones}",
-    )
-
-    return pqrsd
-
-
-async def add_trazabilidad(pqrsd_id: int, evento: str, usuario: str, observaciones: Optional[str] = None):
-    supabase = get_supabase_client()
-    data = {
-        "pqrsd_id": pqrsd_id,
-        "evento": evento,
-        "usuario": usuario,
-        "observaciones": observaciones,
-        "fecha": datetime.utcnow().isoformat(),
-    }
-=======
     supabase = get_supabase()
     nuevo_estado = "aprobada_juridico" if payload.aprobado else "devuelta"
     result = supabase.table("pqrsd").update({"estado": nuevo_estado}).eq("id", payload.pqrsd_id).execute()
@@ -223,6 +157,5 @@ async def add_trazabilidad(pqrsd_id: int, evento: str, usuario: str, observacion
 async def add_trazabilidad(pqrsd_id: int, evento: str, usuario: str, observaciones: str = None):
     supabase = get_supabase()
     data = {"pqrsd_id": pqrsd_id, "evento": evento, "usuario": usuario, "observaciones": observaciones, "fecha": datetime.utcnow().isoformat()}
->>>>>>> Stashed changes
     result = supabase.table("trazabilidad").insert(data).execute()
     return result.data[0] if result.data else None

@@ -6,7 +6,7 @@ export const Footer: React.FC = () => {
   const { footer } = siteContent;
 
   return (
-    <footer className="bg-slate-50 dark:bg-slate-950 text-slate-400 dark:text-slate-600 text-xs uppercase tracking-widest w-full py-12 px-8 border-t border-slate-200/10 dark:border-slate-800/10" id="contacto">
+    <footer className="bg-surface-container-lowest text-on-surface-variant text-xs uppercase tracking-widest w-full py-12 px-8 border-t border-outline-variant" id="contacto">
       <div className="flex flex-col md:flex-row justify-between items-center max-w-7xl mx-auto gap-8">
         <div className="flex flex-col items-center md:items-start gap-2">
           <span className="text-primary font-bold tracking-tighter normal-case text-lg mb-1">{footer.brand}</span>

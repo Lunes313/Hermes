@@ -1,7 +1,7 @@
 const API_BASE_URL = 'http://localhost:8000/api/v1';
 
 export interface PQRSDInput {
-  texto: str;
+  texto: string;
 }
 
 export interface PQRSDOutput {

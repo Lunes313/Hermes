@@ -10,22 +10,22 @@ interface InsightsPanelProps {
 export const InsightsPanel: React.FC<InsightsPanelProps> = ({ analysis, isAnalyzing }) => {
   return (
     <aside className="w-full md:w-80 flex flex-col gap-4">
-      <h2 className="text-xl font-semibold text-primary dark:text-blue-100 px-2 flex items-center gap-2">
+      <h2 className="text-xl font-semibold text-primary px-2 flex items-center gap-2">
         <LineChart size={20} className="text-secondary" />
         Análisis en tiempo real
       </h2>
       
       <div className="flex flex-col gap-4">
         {isAnalyzing && (
-          <div className="bg-white/50 dark:bg-slate-800/50 p-6 rounded-xl border border-dashed border-secondary/30 flex flex-col items-center justify-center gap-3 animate-pulse">
+          <div className="bg-surface-container-low p-6 rounded-xl border border-dashed border-secondary/30 flex flex-col items-center justify-center gap-3 animate-pulse">
             <Loader2 className="animate-spin text-secondary" size={24} />
             <span className="text-xs font-medium text-secondary uppercase tracking-widest">IA Procesando...</span>
           </div>
         )}
 
         {!analysis && !isAnalyzing && (
-          <div className="bg-surface-container-lowest p-8 rounded-xl border border-slate-200 dark:border-slate-800 text-center flex flex-col items-center gap-3 opacity-60">
-            <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+          <div className="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant text-center flex flex-col items-center gap-3 opacity-60">
+            <div className="w-12 h-12 rounded-full bg-surface container flex items-center justify-center text-outline">
               <Database size={24} />
             </div>
             <p className="text-sm text-on-surface-variant leading-relaxed">
@@ -37,7 +37,7 @@ export const InsightsPanel: React.FC<InsightsPanelProps> = ({ analysis, isAnalyz
         {analysis && (
           <>
             {/* Ciudadano */}
-            <div className="bg-surface-container-lowest p-5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 relative overflow-hidden">
+            <div className="bg-surface-container-lowest p-5 rounded-xl shadow-sm border border-outline-variant relative overflow-hidden">
               <div className="absolute top-0 left-0 w-1 h-full bg-primary"></div>
               <div className="flex items-center gap-2 mb-3">
                 <User size={14} className="text-primary" />
@@ -47,7 +47,7 @@ export const InsightsPanel: React.FC<InsightsPanelProps> = ({ analysis, isAnalyz
             </div>
 
             {/* Tipo */}
-            <div className="bg-surface-container-lowest p-5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 relative overflow-hidden">
+            <div className="bg-surface-container-lowest p-5 rounded-xl shadow-sm border border-outline-variant relative overflow-hidden">
               <div className="absolute top-0 left-0 w-1 h-full bg-error"></div>
               <div className="flex items-center gap-2 mb-3">
                 <AlertCircle size={14} className="text-error" />
@@ -57,7 +57,7 @@ export const InsightsPanel: React.FC<InsightsPanelProps> = ({ analysis, isAnalyz
             </div>
 
             {/* Dependencias */}
-            <div className="bg-surface-container-lowest p-5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 relative overflow-hidden">
+            <div className="bg-surface-container-lowest p-5 rounded-xl shadow-sm border border-outline-variant relative overflow-hidden">
               <div className="absolute top-0 left-0 w-1 h-full bg-secondary"></div>
               <div className="flex items-center gap-2 mb-3">
                 <Building2 size={14} className="text-secondary" />
@@ -65,14 +65,14 @@ export const InsightsPanel: React.FC<InsightsPanelProps> = ({ analysis, isAnalyz
               </div>
               <div className="flex flex-wrap gap-2">
                 {analysis.dependencias.map((d, i) => (
-                  <span key={i} className="bg-secondary/10 text-secondary px-2 py-1 rounded text-xs font-semibold">{d}</span>
+                  <span key={i} className="bg-secondary-container/30 text-on-secondary-container px-2 py-1 rounded text-xs font-semibold">{d}</span>
                 ))}
               </div>
             </div>
 
             {/* Lugar */}
             {analysis.lugar && (
-              <div className="bg-surface-container-lowest p-5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 relative overflow-hidden">
+              <div className="bg-surface-container-lowest p-5 rounded-xl shadow-sm border border-outline-variant relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-1 h-full bg-tertiary-fixed-dim"></div>
                 <div className="flex items-center gap-2 mb-3">
                   <MapPin size={14} className="text-on-tertiary-container" />

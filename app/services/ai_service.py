@@ -15,6 +15,7 @@ Tu tarea es analizar el texto de una solicitud ciudadana y extraer la siguiente 
 - dependencias: lista de dependencias de la Alcaldía competentes para atender la solicitud
 - tipo_pqrs: uno de [Petición, Queja, Reclamo, Solicitud, Denuncia, Sugerencia]
 - lugar: lugar mencionado en la solicitud, o "" si no se menciona
+- asunto: resumen corto del problema (máx 10 palabras), o "" si no se explica
 
 Responde ÚNICAMENTE con el JSON, sin texto adicional."""
 
@@ -33,7 +34,8 @@ async def analyze_pqrsd_full(texto: str) -> Dict[str, object]:
         "nombre": "Anónimo",
         "dependencias": ["Atención Ciudadana"],
         "tipo_pqrs": "Petición",
-        "lugar": ""
+        "lugar": "",
+        "asunto": ""
     }
     
     result["embedding"] = embedding

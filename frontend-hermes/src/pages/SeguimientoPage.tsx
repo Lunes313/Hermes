@@ -42,19 +42,19 @@ export const SeguimientoPage: React.FC = () => {
       <main className="flex-grow flex flex-col items-center py-12 px-4 md:px-8 max-w-[1440px] mx-auto w-full gap-12 pt-28">
         {/* Search Section */}
         <section className="w-full max-w-2xl text-center space-y-6">
-          <h1 className="text-4xl md:text-[3.5rem] leading-tight font-black text-primary dark:text-blue-50 tracking-tighter">
+          <h1 className="text-4xl md:text-[3.5rem] leading-tight font-black text-primary tracking-tighter">
             Rastrea tu Solicitud
           </h1>
-          <p className="text-slate-500 dark:text-slate-400 text-base md:text-lg max-w-xl mx-auto font-medium">
+          <p className="text-on-surface-variant text-base md:text-lg max-w-xl mx-auto font-medium">
             Ingresa tu número de radicado (ej: HER-2024...) para ver el estado y la historia de tu solicitud oficial.
           </p>
           
           <div className="relative max-w-lg mx-auto w-full group">
-            <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-secondary transition-colors">
+            <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-on-surface-variant group-focus-within:text-secondary transition-colors">
               <Search size={24} />
             </div>
             <input 
-              className="w-full pl-14 pr-32 py-5 bg-white dark:bg-slate-900 text-on-surface placeholder-slate-400 rounded-2xl border border-slate-200 dark:border-slate-800 focus:ring-4 focus:ring-secondary/10 focus:border-secondary outline-none transition-all shadow-xl shadow-slate-200/50 dark:shadow-none text-lg font-bold" 
+              className="w-full pl-14 pr-32 py-5 bg-surface-container-lowest text-on-surface placeholder:text-on-surface-variant rounded-2xl border border-outline-variant focus:ring-4 focus:ring-secondary/10 focus:border-secondary outline-none transition-all shadow-xl shadow-slate-200/50 text-lg font-bold" 
               placeholder="HER-YYYYMMDD-XXXX" 
               type="text" 
               value={radicado}
@@ -64,7 +64,7 @@ export const SeguimientoPage: React.FC = () => {
             <button 
               onClick={handleSearch}
               disabled={loading}
-              className="absolute inset-y-2 right-2 px-8 bg-primary text-white font-bold rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center cursor-pointer shadow-lg disabled:opacity-50"
+              className="absolute inset-y-2 right-2 px-8 bg-primary text-on-primary font-bold rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center cursor-pointer shadow-lg disabled:opacity-50"
             >
               {loading ? <Loader2 className="animate-spin" size={20} /> : 'Rastrear'}
             </button>

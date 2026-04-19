@@ -1,71 +1,65 @@
-# PQRSD FastAPI MVP
+# 🕊️ Hermes: Sistema Inteligente de PQRSD - Alcaldía de Medellín
 
-Backend simple y funcional para gestionar PQRSD durante una demo de hackathon.
+Hermes es una plataforma de vanguardia diseñada para transformar la interacción entre el ciudadano y la administración distrital de Medellín. Utilizando inteligencia artificial avanzada y un diseño centrado en el usuario, Hermes automatiza la clasificación, el seguimiento y la resolución de Peticiones, Quejas, Reclamos, Sugerencias y Denuncias (PQRSD).
 
-## Estructura
+## 🚀 Características Principales
+
+*   **Asistente IA Interactivo**: Un chatbot inteligente que guía al ciudadano en la redacción de su solicitud, extrayendo automáticamente el asunto, la ubicación y los hechos relevantes.
+*   **Clasificación Automática**: Motor de IA que asigna las solicitudes a la dependencia competente (Secretaría de Movilidad, Seguridad, Salud, etc.) basándose en el análisis semántico del texto.
+*   **Búsqueda de Precedentes (RAG)**: Sistema basado en vectores (`pgvector`) que identifica solicitudes similares históricas para agilizar la respuesta jurídica.
+*   **Dashboard Administrativo**: Panel de gestión avanzado con visualización de datos, mapas de calor (Heatmaps) por comunas y tableros Kanban para el control de estados.
+*   **Cálculo de Términos de Ley**: Automatización del cálculo de fechas de vencimiento según la Ley 1755 de 2015, incluyendo gestión de festivos en Colombia.
+
+## 🛠️ Stack Tecnológico
+
+### Backend
+*   **FastAPI**: Framework de alto rendimiento para la construcción de la API.
+*   **PostgreSQL + pgvector**: Base de datos relacional con capacidades de búsqueda vectorial.
+*   **Supabase**: Backend-as-a-Service para autenticación, almacenamiento y gestión de base de datos.
+*   **HuggingFace Inference**: Modelos de lenguaje para clasificación y generación de embeddings.
+*   **Python 3.11+**: Lenguaje de programación robusto y versátil.
+
+### Frontend
+*   **React 19 (Vite)**: Biblioteca para la interfaz de usuario con alto rendimiento.
+*   **Tailwind CSS 4**: Motor de estilos de última generación enfocado en el rendimiento.
+*   **Framer Motion**: Animaciones fluidas y transiciones de estado de nivel premium.
+*   **Lucide Icons**: Set de iconos modernos y consistentes.
+*   **Stitch Design System**: Sistema de diseño semántico para una experiencia visual cohesiva y profesional.
+
+## 📂 Estructura del Proyecto
 
 ```text
-app/
-  core/
-  models/
-  routers/
-  schemas/
-  services/
-  main.py
-main.py
-requirements.txt
+Hermes/
+├── app/                # Backend (FastAPI, Servicios, Modelos, Esquemas)
+├── frontend-hermes/    # Frontend (React + Vite + Tailwind 4)
+├── main.py             # Punto de entrada del servidor backend
+├── requirements.txt    # Dependencias de Python
+└── .env                # Configuración de variables de entorno (Supabase, API Keys)
 ```
 
-## Ejecutar
+## ⚙️ Configuración e Instalación
 
-```bash
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
-```
+### Requisitos Previos
+*   Python 3.10+
+*   Node.js 18+
+*   Cuenta de Supabase con extensión `vector` habilitada.
 
-La API queda disponible en:
+### Ejecución del Proyecto
 
-- `GET /health`
-- `POST /pqrsd`
-- `GET /pqrsd/{id}`
-- `GET /dependencias`
-- `GET /trazabilidad/{id}`
-- `POST /aprobar`
+1.  **Backend**:
+    ```bash
+    python -m venv venv
+    source venv/bin/activate  # En Windows: venv\Scripts\activate
+    pip install -r requirements.txt
+    uvicorn app.main:app --reload
+    ```
 
-Al crear una PQRSD, el backend intenta usar Groq para clasificar la dependencia,
-calcular un score, generar un lead y asignar urgencia. Si falta la API key, no
-hay internet o la API falla, usa la logica local como respaldo y el endpoint no
-se rompe.
+2.  **Frontend**:
+    ```bash
+    cd frontend-hermes
+    npm install
+    npm run dev
+    ```
 
-Variables de entorno opcionales:
-
-```bash
-GROQ_API_KEY=tu_api_key
-GROQ_MODEL=llama-3.1-8b-instant
-HUGGINGFACE_API_KEY=tu_api_key_opcional
-HUGGINGFACE_EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
-```
-
-Documentacion interactiva:
-
-- `http://127.0.0.1:8000/docs`
-
-## Ejemplos rapidos
-
-Crear PQRSD:
-
-```bash
-curl -X POST http://127.0.0.1:8000/pqrsd \
-  -H "Content-Type: application/json" \
-  -d "{\"asunto\":\"Solicitud de informacion\",\"canal\":\"web\",\"remitente\":\"Ana Perez\",\"texto\":\"Quiero conocer el estado de mi tramite.\"}"
-```
-
-Aprobar o devolver:
-
-```bash
-curl -X POST http://127.0.0.1:8000/aprobar \
-  -H "Content-Type: application/json" \
-  -d "{\"pqrsd_id\":1,\"aprobado\":true,\"usuario\":\"juridica\",\"observaciones\":\"Respuesta revisada.\"}"
-```
+---
+*Desarrollado para la transformación digital de la Alcaldía de Medellín durante la Hackathon 2024.*
