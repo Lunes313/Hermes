@@ -112,16 +112,14 @@ async def create_pqrsd(payload: PQRSDCreate):
         "canal": payload.canal,
         "remitente": payload.remitente,
         "texto": payload.texto,
+        "texto_original": payload.texto,
         "radicado": radicado,
-        "estado": "radicada",
-        "dependencias": ai_result.get("dependencias", ["Atención Ciudadana"]),
-        "tipo_pqrs": ai_result.get("tipo_pqrs", "Petición"),
-        "lugar": ai_result.get("lugar", ""),
-        "nombre_ciudadano": ai_result.get("nombre", "Anónimo"),
+        "estado": "recibida",
+        "dependencia_asignada": ai_result.get("dependencias", ["Atención Ciudadana"])[0] if isinstance(ai_result.get("dependencias"), list) else ai_result.get("dependencias", "Atención Ciudadana"),
+        "tipo": ai_result.get("tipo_pqrs", "Petición").lower().replace('ó', 'o'),
         "embedding": ai_result.get("embedding"),
         "fecha_creacion": now.isoformat(),
-        "fecha_vencimiento": vencimiento.isoformat(),
-        "clasificado_en": now.isoformat()
+        "fecha_vencimiento": vencimiento.isoformat()
     }
     
     result = supabase.table("pqrsd").insert(data).execute()
@@ -154,8 +152,13 @@ async def aprobar_pqrsd(payload: AprobarRequest):
     await add_trazabilidad(pqrsd["id"], "Revisión Jurídica", payload.usuario, f"Estado: {nuevo_estado}")
     return pqrsd
 
-async def add_trazabilidad(pqrsd_id: int, evento: str, usuario: str, observaciones: str = None):
+async def add_trazabilidad(pqrsd_id: int, accion: str, usuario: str, observaciones: str = None):
     supabase = get_supabase()
-    data = {"pqrsd_id": pqrsd_id, "evento": evento, "usuario": usuario, "observaciones": observaciones, "fecha": datetime.utcnow().isoformat()}
+    data = {
+        "pqrsd_id": pqrsd_id, 
+        "accion": accion, 
+        "detalle": {"usuario_str": usuario, "observaciones": observaciones}, 
+        "created_at": datetime.utcnow().isoformat()
+    }
     result = supabase.table("trazabilidad").insert(data).execute()
     return result.data[0] if result.data else None

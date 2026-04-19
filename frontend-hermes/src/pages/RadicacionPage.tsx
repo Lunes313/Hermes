@@ -199,12 +199,25 @@ export const RadicacionPage: React.FC = () => {
                           <option>Comuna 1 - Popular</option>
                           <option>Comuna 2 - Santa Cruz</option>
                           <option>Comuna 3 - Manrique</option>
+                          <option>Comuna 4 - Aranjuez</option>
+                          <option>Comuna 5 - Castilla</option>
+                          <option>Comuna 6 - Doce de Octubre</option>
                           <option>Comuna 7 - Robledo</option>
+                          <option>Comuna 8 - Villa Hermosa</option>
+                          <option>Comuna 9 - Buenos Aires</option>
                           <option>Comuna 10 - La Candelaria</option>
+                          <option>Comuna 11 - Laureles - Estadio</option>
+                          <option>Comuna 12 - La América</option>
+                          <option>Comuna 13 - San Javier</option>
                           <option>Comuna 14 - El Poblado</option>
+                          <option>Comuna 15 - Guayabal</option>
+                          <option>Comuna 16 - Belén</option>
+                          <option>Corregimiento - San Sebastián de Palmitas</option>
                           <option>Corregimiento - San Cristóbal</option>
+                          <option>Corregimiento - Altavista</option>
+                          <option>Corregimiento - San Antonio de Prado</option>
+                          <option>Corregimiento - Santa Elena</option>
                         </select>
-                      </div>
                     </div>
                     <div className="space-y-2 mb-6">
                       <label className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">Asunto o Referencia</label>
