@@ -221,6 +221,8 @@ async def get_pqrsd(pqrsd_id: int):
         return None
     item = result.data[0]
     _attach_lugar(item)
+    if "tipo" in item and "tipo_pqrs" not in item:
+        item["tipo_pqrs"] = item["tipo"].title()
     return item
 
 
@@ -230,6 +232,9 @@ async def list_pqrsd():
     data = result.data or []
     for item in data:
         _attach_lugar(item)
+        # Ensure frontend compatibility with tipo_pqrs field
+        if "tipo" in item and "tipo_pqrs" not in item:
+            item["tipo_pqrs"] = item["tipo"].title()
     return data
 
 
@@ -305,7 +310,7 @@ def _normalize_tipo(tipo: Any) -> str:
         "Peticion": "Peticion",
         "Queja": "Queja",
         "Reclamo": "Reclamo",
-        "Solicitud": "Solicitud",
+        "Solicitud": "Peticion",
         "Denuncia": "Denuncia",
         "Sugerencia": "Sugerencia",
     }

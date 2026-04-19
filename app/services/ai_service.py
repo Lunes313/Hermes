@@ -267,6 +267,7 @@ def _analysis_from_extraction(extraction: Dict[str, Any]) -> Dict[str, Any]:
         "asunto": normalized.get("asunto", ""),
         "hechos": normalized.get("hechos", ""),
         "territorio": normalized.get("territorio", "") or normalized.get("lugar", ""),
+        "tipo_pqrs": normalized.get("tipo", "Peticion"),
     }
 
 

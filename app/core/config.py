@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     HUGGINGFACE_EMBEDDING_MODEL: str = "Loo0115/pqrsd-medellin"
     HUGGINGFACE_CLASSIFY_MODEL: str = "meta-llama/Meta-Llama-3.1-8B-Instruct"
     HUGGINGFACE_CLASSIFY_URL: str = "https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3.1-8B-Instruct"
-    AI_TIMEOUT_SECONDS: int = 10
+    AI_TIMEOUT_SECONDS: int = 30
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
