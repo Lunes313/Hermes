@@ -1,4 +1,12 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://hermes-two-eta.vercel.app/api/v1';
+const cleanBaseUrl = (url: string) => {
+  let cleaned = url.trim().replace(/\/+$/, '');
+  if (!cleaned.includes('/api/v1') && !cleaned.includes('/api/v')) {
+    cleaned += '/api/v1';
+  }
+  return cleaned;
+};
+
+const API_BASE_URL = cleanBaseUrl(import.meta.env.VITE_API_URL || 'https://hermes-two-eta.vercel.app/api/v1');
 
 export interface PQRSDInput {
   texto: string;
