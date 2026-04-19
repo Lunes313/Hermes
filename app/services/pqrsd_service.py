@@ -135,8 +135,18 @@ async def get_pqrsd(pqrsd_id: int):
 
 async def list_pqrsd():
     supabase = get_supabase()
-    result = supabase.table("pqrsd").select("*").order("fecha_creacion", desc=True).execute()
-    return result.data
+    result = supabase.table("pqrsd").select("*, territorios(nombre)").order("fecha_creacion", desc=True).execute()
+    data = result.data
+    import re
+    for item in data:
+        if item.get("territorios") and hasattr(item["territorios"], "get") and item["territorios"].get("nombre"):
+            item["lugar"] = item["territorios"]["nombre"]
+        elif item.get("texto"):
+            m = re.search(r'Territorio:\s*(.*)', item["texto"])
+            item["lugar"] = m.group(1).strip() if m else "Desconocido"
+        else:
+            item["lugar"] = "Desconocido"
+    return data
 
 async def get_trazabilidad(pqrsd_id: int):
     supabase = get_supabase()
